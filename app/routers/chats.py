@@ -10,15 +10,15 @@ router = APIRouter()
 
 
 @router.get("/chat_info/{chat_id}", tags=["info"])
-async def get_chat_info(chat_id: int) -> ChatInfo:
+async def get_chat_info(chat_id: str) -> ChatInfo:
     res = ServiceFactory.get_service("ChatResource")
     result = res.get_info_by_key(chat_id)
     return result
 
 
-@router.get("/chat_details/{line_id}", tags=["detail"])
-async def get_chat_details(line_id: int) -> ChatDetails:
+@router.get("/chat_details/{message_id}", tags=["detail"])
+async def get_chat_details(message_id: str) -> ChatDetails:
     res = ServiceFactory.get_service("ChatResource")
-    result = res.get_details_by_key(line_id)
+    result = res.get_details_by_key(message_id)
     return result
 

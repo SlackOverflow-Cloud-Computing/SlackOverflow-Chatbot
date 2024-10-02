@@ -12,14 +12,12 @@ class ChatResource(BaseResource):
     def __init__(self, config):
         super().__init__(config)
 
-        # TODO -- Replace with dependency injection.
-        #
         self.data_service = ServiceFactory.get_service("ChatResourceDataService")
-        self.database = "TODO"
-        self.info_collection = "TODO"
-        self.details_collection = "TODO"
+        self.database = "chat_db"
+        self.info_collection = "chat_info"
+        self.details_collection = "chat_details"
         self.info_key_field = "chat_id"
-        self.details_key_field = "line_id"
+        self.details_key_field = "message_id"
 
     def get_info_by_key(self, key: str) -> ChatInfo:
 
@@ -28,7 +26,7 @@ class ChatResource(BaseResource):
         result = d_service.get_data_object(
             self.database, self.info_collection, key_field=self.info_key_field, key_value=key
         )
-
+        print(result)
         result = ChatInfo(**result)
         return result
 

@@ -12,24 +12,12 @@ class ServiceFactory(BaseServiceFactory):
 
     @classmethod
     def get_service(cls, service_name):
-        #
-        # TODO -- The terrible, hardcoding and hacking continues.
-        #
-        # if service_name == 'CourseResource':
-        #     result = course_resource.CourseResource(config=None)
-        # elif service_name == 'CourseResourceDataService':
-        #     context = dict(user="root", password="dbuserdbuser",
-        #                    host="localhost", port=3306)
-        #     data_service = MySQLRDBDataService(context=context)
-        #     result = data_service
-        # else:
-        #     result = None
 
         if service_name == 'ChatResource':
             result = chat_resource.ChatResource(config=None)
         elif service_name == 'ChatResourceDataService':
-            context = dict(user="root", password="dbuserdbuser",
-                           host="localhost", port=3306)
+            context = dict(user="admin", password="slackOverflowDB",
+                           host="database-1.ccjxezwbfect.us-east-1.rds.amazonaws.com", port=3306)
             data_service = MySQLRDBDataService(context=context)
             result = data_service
         else:
