@@ -5,6 +5,12 @@ from framework.resources.base_resource import BaseResource
 from app.models.chat_info import ChatInfo
 from app.models.chat_details import ChatDetails
 from app.services.service_factory import ServiceFactory
+import dotenv, os
+
+dotenv.load_dotenv()
+db = os.getenv('DB_NAME')
+info_collection = os.getenv('DB_INFO_COLLECTION')
+details_collection = os.getenv('DB_DETAILS_COLLECTION')
 
 
 class ChatResource(BaseResource):
@@ -13,9 +19,9 @@ class ChatResource(BaseResource):
         super().__init__(config)
 
         self.data_service = ServiceFactory.get_service("ChatResourceDataService")
-        self.database = "chat_db"
-        self.info_collection = "chat_info"
-        self.details_collection = "chat_details"
+        self.database = db
+        self.info_collection = info_collection
+        self.details_collection = details_collection
         self.info_key_field = "chat_id"
         self.details_key_field = "message_id"
 
