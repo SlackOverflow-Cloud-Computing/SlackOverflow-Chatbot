@@ -48,3 +48,6 @@ class ChatResource(BaseResource):
         return result
 
 
+    # TODO: store the chat messages into database
+
+
