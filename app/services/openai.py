@@ -192,7 +192,7 @@ genres = ["acoustic", "afrobeat", "alt-rock", "alternative", "ambient", "anime",
 
 class OpenAIService:
     
-    def __init__(self, token, org):
+    def __init__(self, token, org=None):
         self.client = OpenAI(api_key=token, organization=org)
     
     # https://platform.openai.com/docs/quickstart?language-preference=python

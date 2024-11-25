@@ -1,5 +1,4 @@
 from framework.services.service_factory import BaseServiceFactory
-# import app.resources.course_resource as course_resource
 import app.resources.chat_resource as chat_resource
 from framework.services.data_access.MySQLRDBDataService import MySQLRDBDataService
 from app.services.openai import OpenAIService
