@@ -60,7 +60,7 @@ async def get_chat_history(
 
 
 @router.post("/update_chat", tags=["chat"], status_code=status.HTTP_200_OK)
-async def update_chat(chat_data: ChatData) -> list[ChatDetails]:
+async def update_chat(chat_data: ChatData) -> str:
     """Store message to database, return a chat_id"""
     res = ServiceFactory.get_service("ChatResource")
     result = res.update_chat(chat_data)
@@ -88,6 +88,7 @@ async def analyze_preference(
     else:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="No user records available for analysis")
 
+    # print(f"chatbot service - result: {result}")
     return result
 
 
