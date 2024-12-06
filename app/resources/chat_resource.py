@@ -1,4 +1,4 @@
-from typing import Any
+from typing import Any, Optional
 
 from framework.resources.base_resource import BaseResource
 
@@ -26,6 +26,7 @@ class ChatResource(BaseResource):
         self.details_collection = details_collection
         self.info_key_field = "chat_id"
         self.details_key_field = "message_id"
+        self.user_key_filed = "user_id"
 
     def get_info_by_key(self, key: str) -> ChatInfo:
         d_service = self.data_service
@@ -47,6 +48,58 @@ class ChatResource(BaseResource):
 
         if result:
             result = ChatDetails(**result)
+        return result
+
+    def _get_chat_ids(self, key: str, agent_name: Optional[str] = None) -> list[str]:
+        d_service = self.data_service
+
+        chat_info_list = d_service.get_all_data_object(
+            self.database, self.info_collection, key_field=self.user_key_filed, key_value=key
+        )
+
+        if agent_name:
+            chat_info_list = [info for info in chat_info_list if info["agent_name"] == agent_name]
+
+        results = [info["chat_id"] for info in chat_info_list if "chat_id" in info]
+
+        return results
+
+    def _get_chats_by_key(self, key_field: str, key: str) -> list[ChatDetails]:
+        d_service = self.data_service
+
+        results = d_service.get_all_data_object(
+            self.database, self.details_collection, key_field=key_field, key_value=key
+        )
+        if results:
+            for i in range(len(results)):
+                result = results.pop(0)
+                if result:
+                    result = ChatDetails(**result)
+                results.append(result)
+        return results
+
+    def get_chat_history(self,
+                         user_id: str,
+                         chat_id: Optional[str],
+                         role: Optional[str],
+                         agent_name: Optional[str]) -> list[ChatDetails]:
+        result = []
+        chat_ids = self._get_chat_ids(key=user_id, agent_name=agent_name)
+
+        if not chat_ids:
+            return result
+
+        if chat_id:
+            chat_details = self._get_chats_by_key(key_field="chat_id", key=chat_id)
+            result += chat_details
+        else:
+            for chat_id in chat_ids:
+                chat_details = self._get_chats_by_key(key_field="chat_id", key=chat_id)
+                result += chat_details
+
+        if role:
+            result = [item for item in result if item.role == role]
+
         return result
 
     def update_chat(self, chat_data) -> str:
@@ -89,4 +142,3 @@ class ChatResource(BaseResource):
         )
 
         return info_result.chat_id
-

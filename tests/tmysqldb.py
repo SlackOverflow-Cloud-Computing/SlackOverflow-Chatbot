@@ -1,24 +1,42 @@
-from app.services.data_access.MySQLRDBDataService import MySQLRDBDataService
+from app.resources.chat_resource import ChatResource
+from app.services.service_factory import ServiceFactory
 import json
 
 
-def get_db_service():
-    context = dict(user="root", password="dbuserdbuser",
-                   host="localhost", port=3306)
-    data_service = MySQLRDBDataService(context=context)
-    return data_service
+def test_get_chats_by_chat_id():
+    chat_id = "707dcd66-30e3-4fc7-a25d-d570d2ccfcda"
+    res = ServiceFactory.get_service("ChatResource")
+    result = res._get_chats_by_key(key_field="chat_id", key=chat_id)
+    print(result)
 
 
-def t1():
-    data_service = get_db_service()
-    result = data_service.get_data_object(
-        "course_management",
-        "course_sections",
-        key_field="sis_course_id",
-        key_value="COMSW4153_001_2024_3"
-    )
-    print("t1 result = \n", json.dumps(result, indent=4, default=str))
+def test_get_chats_by_role():
+    role = "ai"
+    res = ServiceFactory.get_service("ChatResource")
+    result = res._get_chats_by_key(key_field="role", key=role)
+    print(result)
 
 
-if __name__ == '__main__':
-    t1()
+def test_get_chat_ids():
+    user_id = "8fa98871-2e6a-42e1-b602-00050e5a0ac4"
+    res = ServiceFactory.get_service("ChatResource")
+    result = res._get_chat_ids(key=user_id)
+    print(result)
+
+def test_get_chat_ids_agent():
+    user_id = "8fa98871-2e6a-42e1-b602-00050e5a0ac4"
+    res = ServiceFactory.get_service("ChatResource")
+    result = res._get_chat_ids(key=user_id, agent_name="Recommendation")
+    print(result)
+
+
+def test_analyze_preference():
+    user_id = "8fa98871-2e6a-42e1-b602-00050e5a0ac4"
+    db_service = ServiceFactory.get_service("ChatResource")
+    chat_history = db_service.get_chat_history(user_id=user_id, chat_id=None, role="human",
+                                               agent_name="Recommendation")
+
+    if chat_history:
+        openai_service = ServiceFactory.get_service("OpenAI")
+        result = openai_service.analyze_user_preference(chat_history)
+        print(result)

@@ -28,9 +28,6 @@ class MySQLRDBDataService(DataDataService):
                         collection_name: str,
                         key_field: str,
                         key_value: str):
-        """
-        See base class for comments.
-        """
 
         connection = None
         result = None
@@ -42,6 +39,32 @@ class MySQLRDBDataService(DataDataService):
             cursor = connection.cursor()
             cursor.execute(sql_statement, [key_value])
             result = cursor.fetchone()
+        except Exception as e:
+            print(f"Error getting data into {database_name}.{collection_name}: {e}")
+            if connection:
+                connection.close()
+
+        return result
+
+    def get_all_data_object(self,
+                        database_name: str,
+                        collection_name: str,
+                        key_field: str,
+                        key_value: str,
+                        order_field: str = "created_at",
+                        order_direction: str = "ASC"):
+
+        connection = None
+        result = None
+
+        try:
+            sql_statement = f"SELECT * FROM {database_name}.{collection_name} " + \
+                            f"where {key_field}=%s" + \
+                            f"ORDER BY {order_field} {order_direction.upper()}"
+            connection = self._get_connection()
+            cursor = connection.cursor()
+            cursor.execute(sql_statement, [key_value])
+            result = cursor.fetchall()
         except Exception as e:
             print(f"Error getting data into {database_name}.{collection_name}: {e}")
             if connection:
@@ -104,8 +127,6 @@ class MySQLRDBDataService(DataDataService):
             cursor.execute(sql_statement, values)
 
             result = cursor.fetchone()
-            # connection.commit()
-            # result = cursor.rowcount
 
         except Exception as e:
             print(f"Error updating data in {database_name}.{collection_name}: {e}")

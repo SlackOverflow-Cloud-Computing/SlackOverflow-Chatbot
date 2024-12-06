@@ -1,11 +1,12 @@
 from openai import OpenAI
 from app.models.traits import Traits
+from app.models.chat_details import ChatDetails
 from typing import Optional
 import json
 
 
 # with the help of ChatGPT:
-SYS_PROMPT = """
+SYS_PROMPT_RECOMMENDATION = """
 You are a system that processes user descriptions of songs and generates a JSON response with the following attributes. Based on the user's input, populate the values for minimum (`min_`), maximum (`max_`), or target (`target_`) for each attribute. If the user does not describe an aspect of the song, leave the corresponding value as `null`.
 
 ### Attributes to Populate:
@@ -143,6 +144,50 @@ You are a system that processes user descriptions of songs and generates a JSON 
   "target_valence": 0.9
 }"""
 
+SYS_PROMPT_PREFERENCE = """
+You are a Music Preference Analyzer assistant. Your task is to analyze the user's chat history, which includes timestamps and conversation content, to understand the user's music preferences. Pay special attention to how the user's preferences may have evolved over time. Based on your analysis, provide insightful observations about the user's musical tastes and recommend relevant songs that align with these preferences.
+
+# Instructions
+
+1. **Analyze Chat History**:
+   - Review each entry in the user's chat history, noting the date, time, and content of each message.
+   - Identify the types of music requests made (e.g., random songs, holiday-specific music, mood-based songs).
+   - Detect any patterns or shifts in the user's music preferences over time.
+
+2. **Identify Music Preferences**:
+   - Determine preferred genres, artists, moods, and specific themes based on the user's requests.
+   - Note any recurring requests or specific criteria mentioned by the user.
+
+3. **Detect Temporal Trends**:
+   - Observe how the user's preferences change with time or specific events (e.g., seasonal requests like Thanksgiving music).
+   - Identify any increasing or decreasing interest in certain music styles or themes.
+
+4. **Provide Insights**:
+   - Summarize the key findings from the analysis.
+   - Explain possible reasons behind the user's music preferences and their changes over time.
+
+5. **Recommend Songs**:
+   - Based on the analysis, suggest a list of songs that align with the user's identified preferences.
+   - Ensure recommendations are diverse yet cohesive, reflecting both consistent and evolving tastes.
+
+# Output Format
+
+- **Analysis Summary**:
+  Provide a detailed summary of the user's music preferences, highlighting key genres, artists, moods, and any observed changes over time.
+
+- **Insights**:
+  Share insightful observations about the user's musical tastes, including possible reasons for their preferences and how they have evolved.
+
+- **Recommended Songs**:
+  List 10 recommended songs that align with the user's preferences. Format each recommendation as follows:
+  - **Song Title** by **Artist Name** - [Genre/Mood Descriptor]
+
+# Example
+
+**Input Chat History**:
+
+"""
+
 TRAITS = [
     "min_acousticness",
     "max_acousticness",
@@ -199,7 +244,7 @@ class OpenAIService:
     def extract_song_traits(self, query: str) -> Optional[Traits]:
         """Given a query, extract a songs traits and genres and return the JSON representation"""
         for _ in range(3): # Try 3 times
-            traits_completion = self._chat(query, SYS_PROMPT)
+            traits_completion = self._chat(query, SYS_PROMPT_RECOMMENDATION)
             genre_completion = self._chat(
                 query,
                 f"Given the description from the user, write out the genres that apply from the following list:\n{genres}",
@@ -212,6 +257,20 @@ class OpenAIService:
                 continue
             return output_json
         return None
+
+    def analyze_user_preference(self, chat_history: list[ChatDetails]) -> str:
+        """Analyze the user preference with given chat history, return agent message"""
+        query = "**User's Chat History:**"
+        for chat in chat_history:
+            query += f"\n{str(chat.created_at)} - {chat.content}"
+
+        preference_completion = self._chat(
+            query,
+            SYS_PROMPT_PREFERENCE,
+        )
+
+        return preference_completion
+
 
     def _chat(self, query, sys_prompt, model="gpt-4o-mini"):
         """Send a request to GPT"""
