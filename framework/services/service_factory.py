@@ -5,8 +5,6 @@
 #
 from abc import ABC, abstractmethod
 
-# TODO -- Implement the framework.
-#
 
 
 class BaseServiceFactory(ABC):

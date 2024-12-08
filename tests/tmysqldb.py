@@ -40,3 +40,18 @@ def test_analyze_preference():
         openai_service = ServiceFactory.get_service("OpenAI")
         result = openai_service.analyze_user_preference(chat_history)
         print(result)
+
+
+def test_general_chat():
+    user_id = "test_user"
+    chat_id = "test_chat"
+    query = "What are some news for music world today?"
+    # Get chat history by specific chat id
+    db_service = ServiceFactory.get_service("ChatResource")
+    chat_history = db_service.get_chat_history(user_id=user_id, chat_id=chat_id, agent_name="Chat")
+
+    # Generate agent's answer
+    openai_service = ServiceFactory.get_service("OpenAI")
+    answer = openai_service.general_chat(query=query, chat_history=chat_history)
+    print(type(answer))
+    print(answer)
