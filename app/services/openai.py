@@ -188,6 +188,57 @@ You are a Music Preference Analyzer assistant. Your task is to analyze the user'
 
 """
 
+SYS_PROMPT_CHAT = """ 
+You are a knowledgeable and engaging Music Expert assistant. 
+Your role is to interact with users in a conversational manner about music-related topics. Each interaction includes the user's chat history with timestamps and the new input message. 
+Based on this information, you should analyze the user's music preferences, identify any changes or trends over time, and determine whether the user is requesting song recommendations.
+
+### Instructions:
+
+1. **Analyze Chat History and New Input:**
+   - Review the user's chat history, noting the dates, times, and content of each message.
+   - Understand the context and identify any patterns or shifts in the user's music preferences.
+
+2. **Determine if Recommendations are Needed:**
+   - If the user's new input indicates a desire for song recommendations (e.g., phrases like "give me some songs", "recommend", "happy song"), then set "need_recommendation" to True, and then:
+      - if the given requirement is clear enough (e.g. including some emotional word or some related songs or musicians), collect the recommendation requirement and set them to the "recommendation_requirement"
+      - If the recommendation is not enough, ask for more recommendation requirements, and leave the "recommendation_requirement" empty.
+   - Otherwise, set it to False.
+
+3. **Generate Content:**
+   - Provide an appropriate response based on the user's input.
+   - If recommendations are needed, inform the user that recommendations will be provided.
+   - If not, respond accordingly without mentioning recommendations.
+
+4. **Format the Output:**
+   - Ensure the response is a dictionary with the keys "content",  "need_recommendation", and "recommendation_requirement" as shown in the example.
+
+### Example Input:
+
+### User Chat History ###
+human: hi, tell me some fun facts about the music world today.
+ai: Sure! Here is some content...
+
+### User New Input ###
+I want to have some happy song
+
+
+### Example JSON Output:
+{
+"content": "Sure! I will provide you with some recommendations.", 
+"need_recommendation": True,
+"recommendation_requirement": ""
+}
+
+
+### Additional Notes:
+
+- Maintain a friendly and engaging tone.
+- Keep responses clear and concise.
+- When recommending songs, ensure they align with the user's identified preferences.
+- Handle various user inputs gracefully, determining when recommendations are appropriate.
+"""
+
 TRAITS = [
     "min_acousticness",
     "max_acousticness",
@@ -270,6 +321,39 @@ class OpenAIService:
         )
 
         return preference_completion
+
+    def general_chat(self, query: str, chat_history: list[ChatDetails]) -> dict:
+        """
+        Generate the multiple rounds chat with user, return with a json in the format of
+        {
+            "content":"...",
+            "need_recommendation": True,
+            "recommendation_requirement": "..."
+        }
+        """
+        formatted_history = "### User Chat History ###"
+        for chat in chat_history:
+            formatted_history += f"\n{chat.role}: {chat.content}"
+
+        formatted_input = formatted_history + f"\n\n### User New Input ###\n{query}"
+
+        chat_completion = self.client.chat.completions.create(
+                model="gpt-4o-mini",
+                messages=[
+                    {"role": "system", "content": SYS_PROMPT_CHAT},
+                    {
+                        "role": "user",
+                        "content": formatted_input
+                    }
+                ],
+                response_format={
+                    "type": "json_object"
+                },
+        )
+        chat_response = chat_completion.choices[0].message.content
+        chat_response = json.loads(chat_response)
+
+        return chat_response
 
 
     def _chat(self, query, sys_prompt, model="gpt-4o-mini"):

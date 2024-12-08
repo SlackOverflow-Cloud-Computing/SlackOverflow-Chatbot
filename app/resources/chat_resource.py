@@ -1,4 +1,4 @@
-from typing import Any, Optional
+from typing import Any, Optional, List
 
 from framework.resources.base_resource import BaseResource
 
@@ -50,7 +50,7 @@ class ChatResource(BaseResource):
             result = ChatDetails(**result)
         return result
 
-    def _get_chat_ids(self, key: str, agent_name: Optional[str] = None) -> list[str]:
+    def _get_chat_ids(self, key: str, agent_name: Optional[str] = None) -> List[str]:
         d_service = self.data_service
 
         chat_info_list = d_service.get_all_data_object(
@@ -64,7 +64,7 @@ class ChatResource(BaseResource):
 
         return results
 
-    def _get_chats_by_key(self, key_field: str, key: str) -> list[ChatDetails]:
+    def _get_chats_by_key(self, key_field: str, key: str) -> List[ChatDetails]:
         d_service = self.data_service
 
         results = d_service.get_all_data_object(
@@ -80,9 +80,9 @@ class ChatResource(BaseResource):
 
     def get_chat_history(self,
                          user_id: str,
-                         chat_id: Optional[str],
-                         role: Optional[str],
-                         agent_name: Optional[str]) -> list[ChatDetails]:
+                         chat_id: Optional[str]=None,
+                         role: Optional[str]=None,
+                         agent_name: Optional[str]=None) -> List[ChatDetails]:
         result = []
         chat_ids = self._get_chat_ids(key=user_id, agent_name=agent_name)
 
