@@ -1,21 +1,21 @@
 # The base image for python. There are countless official images.
 # Alpine just sounded cool.
 #
-FROM python:3.12
+FROM python:3.9-slim
 
 # The directory in the container where the app will run.
 #
-WORKDIR /code
+WORKDIR /app
 
 # Copy the requirements.txt file from the project directory into the working
 # directory and install the requirements.
 #
-COPY ./requirements.txt /code/requirements.txt
-RUN pip install -r /code/requirements.txt
+COPY ./requirements.txt /app/requirements.txt
+RUN pip install --no-cache-dir -r /app/requirements.txt
 
 # Copy over the files.
 #
-COPY . /code/.
+COPY . /app/.
 
 # Expose/publish port 5002 for the container.
 #
@@ -27,5 +27,5 @@ EXPOSE 8000
 ENV WHEREAMI=DOCKER
 
 # Run the app.
-CMD ["python", "-m", "app.main"]
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
 
