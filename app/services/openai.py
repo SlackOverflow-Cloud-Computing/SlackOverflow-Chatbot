@@ -296,41 +296,43 @@ class OpenAIService:
         self.client = OpenAI(api_key=token, organization=org)
     
     # https://platform.openai.com/docs/quickstart?language-preference=python
-    def extract_song_traits(self, query: str) -> Optional[Traits]:
+    def extract_song_traits(self, query: str, cid: str) -> Optional[Traits]:
         """Given a query, extract a songs traits and genres and return the JSON representation"""
-        logger.info(f"Getting song traits from query: {query}")
+        logger.info(f"Getting song traits from query: {query} - [{cid}]")
         for _ in range(3): # Try 3 times
-            traits_completion = self._chat(query, SYS_PROMPT_RECOMMENDATION)
+            traits_completion = self._chat(query, SYS_PROMPT_RECOMMENDATION, cid)
             genre_completion = self._chat(
                 query,
                 f"Given the description from the user, write out the genres that apply from the following list:\n{genres}",
+                cid
             )
-            output_json = self._verify_traits_json(traits_completion)
+            output_json = self._verify_traits_json(traits_completion, cid)
             if output_json is None:
                 continue
-            output_json = self._extract_genres(genre_completion, output_json)
+            output_json = self._extract_genres(genre_completion, output_json, cid)
             if output_json is None:
                 continue
-            logger.info(f"Got song traits: {output_json}")
+            logger.info(f"Got song traits: {output_json} - [{cid}]")
             return output_json
-        logger.error(f"Failed to get song traits: {query}")
+        logger.error(f"Failed to get song traits: {query} - [{cid}]")
         raise HTTPException(status_code=500, detail="Failed get song traits")
 
-    def analyze_user_preference(self, chat_history: list[ChatDetails]) -> str:
+    def analyze_user_preference(self, chat_history: list[ChatDetails], cid: str) -> str:
         """Analyze the user preference with given chat history, return agent message"""
         query = "**User's Chat History:**"
-        logger.info(f"Analyzing user preference. Chat history: {chat_history}")
+        logger.info(f"Analyzing user preference. Chat history: {chat_history} - [{cid}]")
         for chat in chat_history:
             query += f"\n{str(chat.created_at)} - {chat.content}"
 
         preference_completion = self._chat(
             query,
             SYS_PROMPT_PREFERENCE,
+            cid
         )
-        logger.info(f"Got user preferences: {preference_completion}")
+        logger.info(f"Got user preferences: {preference_completion} - [{cid}]")
         return preference_completion
 
-    def general_chat(self, query: str, chat_history: list[ChatDetails]) -> dict:
+    def general_chat(self, query: str, chat_history: list[ChatDetails], cid: str) -> dict:
         """
         Generate the multiple rounds chat with user, return with a json in the format of
         {
@@ -338,7 +340,7 @@ class OpenAIService:
             "need_recommendation": True
         }
         """
-        logger.info(f"Generating standard chat response for: {query}")
+        logger.info(f"Generating standard chat response for: {query} - [{cid}]")
         formatted_history = "### User Chat History ###"
         for chat in chat_history:
             formatted_history += f"\n{chat.role}: {chat.content}"
@@ -360,16 +362,16 @@ class OpenAIService:
                 },
             )
         except Exception as e:
-            logger.error(f"OpenAI failure: {e}")
+            logger.error(f"OpenAI failure: {e} - [{cid}]")
             raise HTTPException(status_code=500, detail=str(e))
         
         chat_response = chat_completion.choices[0].message.content
         chat_response = json.loads(chat_response)
-        logger.info(f"Got chat response: {chat_response}")
+        logger.info(f"Got chat response: {chat_response} - [{cid}]")
         return chat_response
 
 
-    def _chat(self, query, sys_prompt, model="gpt-4o-mini"):
+    def _chat(self, query: str, sys_prompt: str, cid: str, model="gpt-4o-mini"):
         """Send a request to GPT"""
         try:
             completion = self.client.chat.completions.create(
@@ -383,27 +385,27 @@ class OpenAIService:
                     ]
             )
         except Exception as e:
-            logger.error(f"OpenAI failure: {e}")
+            logger.error(f"OpenAI failure: {e} - [{cid}]")
             return None
         return completion.choices[0].message.content
 
-    def _verify_traits_json(self, output):
+    def _verify_traits_json(self, output: str, cid: str):
         """Verify the JSON provided from GPT and add missing fields"""
-        logger.info(f"Verifying json: {output}")
+        logger.info(f"Verifying json: {output} - [{cid}]")
         try:
             start = output.index("{")
             end = output.index("}")
             output_json = json.loads(output[start:end+1])
         except Exception as e:
-            logger.error(f"JSON decode error: {output}")
+            logger.error(f"JSON decode error: {output} - [{cid}]")
             return None
         for trait in TRAITS:
             if trait not in output_json:
-                logger.error(f"Missing trait: {trait}")
+                logger.error(f"Missing trait: {trait} - [{cid}]")
                 return None
         for key in output_json:
             if key not in TRAITS:
-                logger.error(f"Extra key: {key}")
+                logger.error(f"Extra key: {key} - [{cid}]")
                 return None
             
         output_json["limit"] = 3
@@ -411,14 +413,14 @@ class OpenAIService:
         
         return output_json
 
-    def _extract_genres(self, output, curr_json):
+    def _extract_genres(self, output: str, curr_json, cid: str):
         """Extract genres from GPT response"""
-        logger.info(f"Extracting genres: {output}")
+        logger.info(f"Extracting genres: {output} - [{cid}]")
         curr_json["genres"] = []
         for genre in genres:
             if genre in output:
                 curr_json["genres"].append(genre)
         if len(curr_json["genres"]) == 0:
-            logger.error(f"No genres found: {output}")
+            logger.error(f"No genres found: {output} - [{cid}]")
             return None
         return curr_json
