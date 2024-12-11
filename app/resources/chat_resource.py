@@ -34,7 +34,6 @@ class ChatResource(BaseResource):
         result = d_service.get_data_object(
             self.database, self.info_collection, key_field=self.info_key_field, key_value=key
         )
-        print(result)
         if result:
             result = ChatInfo(**result)
         return result

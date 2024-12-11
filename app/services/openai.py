@@ -3,6 +3,10 @@ from app.models.traits import Traits
 from app.models.chat_details import ChatDetails
 from typing import Optional
 import json
+import logging
+from fastapi import HTTPException
+
+logger = logging.getLogger("uvicorn")
 
 
 # with the help of ChatGPT:
@@ -294,6 +298,7 @@ class OpenAIService:
     # https://platform.openai.com/docs/quickstart?language-preference=python
     def extract_song_traits(self, query: str) -> Optional[Traits]:
         """Given a query, extract a songs traits and genres and return the JSON representation"""
+        logger.info(f"Getting song traits from query: {query}")
         for _ in range(3): # Try 3 times
             traits_completion = self._chat(query, SYS_PROMPT_RECOMMENDATION)
             genre_completion = self._chat(
@@ -306,12 +311,15 @@ class OpenAIService:
             output_json = self._extract_genres(genre_completion, output_json)
             if output_json is None:
                 continue
+            logger.info(f"Got song traits: {output_json}")
             return output_json
-        return None
+        logger.error(f"Failed to get song traits: {query}")
+        raise HTTPException(status_code=500, detail="Failed get song traits")
 
     def analyze_user_preference(self, chat_history: list[ChatDetails]) -> str:
         """Analyze the user preference with given chat history, return agent message"""
         query = "**User's Chat History:**"
+        logger.info(f"Analyzing user preference. Chat history: {chat_history}")
         for chat in chat_history:
             query += f"\n{str(chat.created_at)} - {chat.content}"
 
@@ -319,7 +327,7 @@ class OpenAIService:
             query,
             SYS_PROMPT_PREFERENCE,
         )
-
+        logger.info(f"Got user preferences: {preference_completion}")
         return preference_completion
 
     def general_chat(self, query: str, chat_history: list[ChatDetails]) -> dict:
@@ -330,13 +338,15 @@ class OpenAIService:
             "need_recommendation": True
         }
         """
+        logger.info(f"Generating standard chat response for: {query}")
         formatted_history = "### User Chat History ###"
         for chat in chat_history:
             formatted_history += f"\n{chat.role}: {chat.content}"
 
         formatted_input = formatted_history + f"\n\n### User New Input ###\n{query}"
 
-        chat_completion = self.client.chat.completions.create(
+        try:
+            chat_completion = self.client.chat.completions.create(
                 model="gpt-4o-mini",
                 messages=[
                     {"role": "system", "content": SYS_PROMPT_CHAT},
@@ -348,44 +358,52 @@ class OpenAIService:
                 response_format={
                     "type": "json_object"
                 },
-        )
+            )
+        except Exception as e:
+            logger.error(f"OpenAI failure: {e}")
+            raise HTTPException(status_code=500, detail=str(e))
+        
         chat_response = chat_completion.choices[0].message.content
         chat_response = json.loads(chat_response)
-
+        logger.info(f"Got chat response: {chat_response}")
         return chat_response
 
 
     def _chat(self, query, sys_prompt, model="gpt-4o-mini"):
         """Send a request to GPT"""
-        completion = self.client.chat.completions.create(
-                model=model,
-                messages=[
-                    {"role": "system", "content": sys_prompt},
-                    {
-                        "role": "user",
-                        "content": query
-                    }
-                ]
-        )
+        try:
+            completion = self.client.chat.completions.create(
+                    model=model,
+                    messages=[
+                        {"role": "system", "content": sys_prompt},
+                        {
+                            "role": "user",
+                            "content": query
+                        }
+                    ]
+            )
+        except Exception as e:
+            logger.error(f"OpenAI failure: {e}")
+            return None
         return completion.choices[0].message.content
 
     def _verify_traits_json(self, output):
         """Verify the JSON provided from GPT and add missing fields"""
+        logger.info(f"Verifying json: {output}")
         try:
             start = output.index("{")
             end = output.index("}")
             output_json = json.loads(output[start:end+1])
         except Exception as e:
-            print("JSON decode error", output)
-            print(e)
+            logger.error(f"JSON decode error: {output}")
             return None
         for trait in TRAITS:
             if trait not in output_json:
-                print(f"Missing trait: {trait}")
+                logger.error(f"Missing trait: {trait}")
                 return None
         for key in output_json:
             if key not in TRAITS:
-                print(f"Extra key: {key}")
+                logger.error(f"Extra key: {key}")
                 return None
             
         output_json["limit"] = 3
@@ -395,15 +413,12 @@ class OpenAIService:
 
     def _extract_genres(self, output, curr_json):
         """Extract genres from GPT response"""
+        logger.info(f"Extracting genres: {output}")
         curr_json["genres"] = []
         for genre in genres:
             if genre in output:
                 curr_json["genres"].append(genre)
         if len(curr_json["genres"]) == 0:
-            print("No genres found:", output)
+            logger.error(f"No genres found: {output}")
             return None
         return curr_json
-
-
-
-# print(extract_song_traits("Fast paced country music."))
