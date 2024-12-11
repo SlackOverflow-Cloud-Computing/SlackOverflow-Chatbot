@@ -91,7 +91,7 @@ async def general_chat(
     if answer is None:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Couldn't get Open AI response")
 
-    if answer["need_recommendation"] and answer["recommendation_requirement"]: # able to generate recommendation:
+    if answer["need_recommendation"]: # able to generate recommendation:
         traits = openai_service.extract_song_traits(query)
         if traits is None:
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Couldn't extract song traits")

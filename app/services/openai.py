@@ -201,9 +201,8 @@ Do NOT provide actual song recommendations to the user. If they request recommen
    - Understand the context and identify any patterns or shifts in the user's music preferences.
 
 2. **Determine if Recommendations are Needed:**
-   - If the user's new input indicates a desire for song recommendations (e.g., phrases like "give me some songs", "recommend", "happy song"), then set "need_recommendation" to True, and then:
-      - if the given requirement is clear enough (e.g. including some emotional word or some related songs or musicians), collect the recommendation requirement and set them to the "recommendation_requirement"
-      - If the recommendation is not enough, ask for more recommendation requirements, and leave the "recommendation_requirement" empty.
+   - If the user's new input indicates a desire for song recommendations, then set "need_recommendation" to True, and then:
+      - If the recommendation is not enough, ask for more recommendation requirements.
    - Otherwise, set it to False.
 
 3. **Generate Content:**
@@ -212,7 +211,7 @@ Do NOT provide actual song recommendations to the user. If they request recommen
    - If not, respond accordingly without mentioning recommendations.
 
 4. **Format the Output:**
-   - Ensure the response is a dictionary with the keys "content",  "need_recommendation", and "recommendation_requirement" as shown in the example.
+   - Ensure the response is a dictionary with the keys "content" and "need_recommendation" as shown in the example.
 
 ### Example Input:
 
@@ -227,8 +226,7 @@ I want to have some happy song
 ### Example JSON Output:
 {
 "content": "Sure! I will provide you with some recommendations.", 
-"need_recommendation": True,
-"recommendation_requirement": ""
+"need_recommendation": True
 }
 
 
@@ -238,7 +236,7 @@ I want to have some happy song
 - Keep responses clear and concise.
 - When recommending songs, ensure they align with the user's identified preferences.
 - Handle various user inputs gracefully, determining when recommendations are appropriate.
-- If they have asked for music, ensure that need_recommendation is set to True!
+- If they have asked for music, ensure that need_recommendation is set to True! It also HAS to be set to true if you say you are providing recommendations.
 """
 
 TRAITS = [
@@ -329,8 +327,7 @@ class OpenAIService:
         Generate the multiple rounds chat with user, return with a json in the format of
         {
             "content":"...",
-            "need_recommendation": True,
-            "recommendation_requirement": "..."
+            "need_recommendation": True
         }
         """
         formatted_history = "### User Chat History ###"
