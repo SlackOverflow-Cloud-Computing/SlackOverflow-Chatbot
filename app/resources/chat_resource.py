@@ -105,13 +105,16 @@ class ChatResource(BaseResource):
     def update_chat(self, chat_data) -> str:
         message_id = str(uuid.uuid4())
         created_at = datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')
+        chat_id = chat_data.chat_id
+        if chat_id is None:
+            chat_id = str(uuid.uuid4())
 
         # Check whether a new chat_id
         info_result = self.get_info_by_key(chat_data.chat_id)
 
         if info_result is None:
             chat_info_data = {
-                "chat_id": chat_data.chat_id,
+                "chat_id": chat_id,
                 "user_id": chat_data.user_id,
                 "user_name": chat_data.user_name,
                 "agent_id": chat_data.agent_id,
@@ -140,5 +143,6 @@ class ChatResource(BaseResource):
             collection_name=self.details_collection,
             data=chat_details_data
         )
+        # print(f"details_result: {details_result}")
 
-        return info_result.chat_id
+        return chat_id
